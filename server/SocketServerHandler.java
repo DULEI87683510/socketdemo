@@ -9,6 +9,7 @@ import io.netty.channel.*;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.handler.codec.http.websocketx.*;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +19,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Sharable
-public class SocketServerHandler extends SimpleChannelInboundHandler<String> {
-    private static final Logger log = LoggerFactory
-            .getLogger(SocketServerHandler.class);
+@Slf4j
+public class SocketServerHandler extends SimpleChannelInboundHandler<Object> {
+ /*   private static final Logger log = LoggerFactory
+            .getLogger(SocketServerHandler.class);*/
     @Autowired
     private UserServiceImpl userService;
     /**
@@ -69,19 +71,21 @@ public class SocketServerHandler extends SimpleChannelInboundHandler<String> {
     }
     //收到客户端发来的消息
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Object obj) throws Exception {
         // TODO Auto-generated method stub
-        log.info("收到客户端-{}发来的消息：{}",ctx.channel().remoteAddress(),msg);
-        User user= JSONObject.parseObject(msg,User.class);
-        userService.saveUser(user);
-
+        log.info("收到客户端-{}发来的消息：{}",ctx.channel().remoteAddress(),obj);
+        //User user= JSONObject.parseObject(msg,User.class);
+        //userService.saveUser(user);
+        ctx.channel().writeAndFlush("服务端已经收到你发的消息"+obj.toString());
 
     }
 
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-
+        log.info("心跳方法执行.。。。。");
+        PingWebSocketFrame pingWebSocketFrame=new PingWebSocketFrame();
+        ctx.channel().writeAndFlush(pingWebSocketFrame);
 
     }
 }

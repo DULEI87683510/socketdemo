@@ -1,25 +1,31 @@
 package com.dl.socketdemo.server;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.nio.charset.Charset;
 
 /**
- *@ClassName NettySocketServer
- *@Description TODO
- *@Author DL
- *@Date 2019/10/18 16:49    
- *@Version 1.0
+ * @ClassName NettySocketServer
+ * @Description TODO
+ * @Author DL
+ * @Date 2019/10/18 16:49
+ * @Version 1.0
  */
 @Component
+@Slf4j
 public class NettySocketServer {
     //用于客户端连接请求
 
@@ -31,7 +37,7 @@ public class NettySocketServer {
 
     //服务器的辅助启动类
 
-    private ServerBootstrap serverBootstrap =new ServerBootstrap();
+    private ServerBootstrap serverBootstrap = new ServerBootstrap();
 
 
     private ChannelFuture channelFuture;
@@ -43,15 +49,16 @@ public class NettySocketServer {
     @Value("${socket-port:9999}")
     private int port;
 
-    public NettySocketServer(){
+    public NettySocketServer() {
 
         System.out.println("初始化netty");
     }
+
     @PostConstruct
     public void run() {
 
         // TODO Auto-generated method stub
-        new  Thread(new Runnable() {
+        new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -64,12 +71,9 @@ public class NettySocketServer {
         }).start();
 
 
-
-
-
     }
 
-    public void bulid(int port) throws Exception{
+    public void bulid(int port) throws Exception {
 
         try {
 
@@ -80,7 +84,7 @@ public class NettySocketServer {
             //(5)开启心跳包活机制，就是客户端、服务端建立连接处于ESTABLISHED状态，超过2小时没有交流，机制会被启动
             //(6)netty提供了2种接受缓存区分配器，FixedRecvByteBufAllocator是固定长度，但是拓展，AdaptiveRecvByteBufAllocator动态长度
             //(7)绑定I/O事件的处理类,WebSocketChildChannelHandler中定义
-            serverBootstrap.group(bossGroup,workerGroup)
+            serverBootstrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .option(ChannelOption.SO_BACKLOG, 1024)
                     .option(ChannelOption.TCP_NODELAY, true)
@@ -90,6 +94,16 @@ public class NettySocketServer {
 
 
             channelFuture = serverBootstrap.bind(port).sync();
+            channelFuture.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                    if (channelFuture.isSuccess()) {
+                        ByteBuf buffer = Unpooled.copiedBuffer("Hello", Charset.defaultCharset());
+                        ChannelFuture wf = channelFuture.channel().writeAndFlush(buffer);
+                        log.info("操作成功");
+                    }
+                }
+            });
             System.out.println("netty服务端启动成功");
             channelFuture.channel().closeFuture().sync();
 
@@ -99,7 +113,7 @@ public class NettySocketServer {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
 
-        }finally {
+        } finally {
             close();
         }
 
@@ -107,7 +121,7 @@ public class NettySocketServer {
 
     //执行之后关闭
 
-    public void close(){
+    public void close() {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
 

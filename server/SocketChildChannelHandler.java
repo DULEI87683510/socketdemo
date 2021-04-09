@@ -7,9 +7,12 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.TimeUnit;
 
 
 @Component
@@ -35,6 +38,7 @@ public class SocketChildChannelHandler extends ChannelInitializer<SocketChannel>
       ch.pipeline().addLast("aggregator",new HttpObjectAggregator(65536));
       // ChunkedWriteHandler：向客户端发送HTML5文件
       ch.pipeline().addLast("http-chunked",new ChunkedWriteHandler());*/
+        ch.pipeline().addLast(new IdleStateHandler(0, 0,15, TimeUnit.SECONDS));//心跳，10秒没有读或者写的操作，触发执行方法
       ch.pipeline().addLast(new StringDecoder(CharsetUtil.UTF_8));
       ch.pipeline().addLast(new StringEncoder(CharsetUtil.UTF_8));
        ch.pipeline().addLast("http-codec", new HttpServerCodec());
